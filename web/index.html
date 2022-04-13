@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Gambling Roulette</title>
+
+    <script src='web3.min.js'></script>
+    <script type="text/javascript" src="abilist.js"></script>
+    <script type="text/javascript">
+        let accounts = null;
+        let gambleInstance = null;
+        let resultBox = null;
+
+        let partiList = [];
+        let percentageList = [
+            { name: "현재 참여자에게 베팅금 전액 송금", index: 0, percentage: 5, show: true },
+            { name: "특정 참여자에게 베팅금 전액 송금", index: 1, percentage: 5, show: false },
+            { name: "베팅금 증가 비율 1% 증가", index: 2, percentage: 5, show: true },
+            { name: "베팅금 증가 비율 2% 증가", index: 3, percentage: 5, show: true },
+            { name: "베팅금 증가 비율 5% 증가", index: 4, percentage: 5, show: true },
+            { name: "PASS", index: 5, percentage: 80, show: true },
+        ];
+
+        window.addEventListener('load', gamble);
+
+        /// Gamble Init
+        async function gamble() {
+            if (window.ethereum) {
+                let accountBtn = document.getElementById("accountBtn");
+                accountBtn.addEventListener('click', accountBtnClicked);
+            } else if (window.web3) {
+                // Dapp 지원 브라우저일 경우
+                window.web3 = new Web3(web3.currentProvider);
+            }
+            else {
+                // Dapp 지원 브라우저 아닐 경우
+                window.web3 = null
+            }
+        }
+
+        /// Account 연결
+        async function accountBtnClicked() {
+            // account 가져오기 (= Metamask 계정)
+            accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+
+            let accountBtn = document.getElementById("accountBtn");
+            accountBtn.disabled = true;
+
+            const showAccount = document.getElementById("showAccount");
+            showAccount.innerHTML = accounts[0];
+
+            getGambleInstance();
+        }
+
+        /// Gamble 인스턴스 생성
+        async function getGambleInstance() {
+            // Deploy를 수행한 address (= Metamask 계정 아님)
+            // Gamble의 address
+            let address = "0xf8e81D47203A594245E36C48e151709F0C19fBe8";
+
+            window.web3 = new Web3(window.ethereum);
+
+            // Gamble의 Contract 생성
+            gambleInstance = await new window.web3.eth.Contract(gambleAbi, address);
+            registerEventHandlers();
+        }
+
+        async function registerEventHandlers() {
+            let mainBtn = document.getElementById("mainBtn");
+            mainBtn.addEventListener('click', launchMain);
+            let percentageBtn = document.getElementById("percentageBtn");
+            percentageBtn.addEventListener('click', checkPercentage);
+
+            let subBtn = document.getElementById("subBtn");
+            subBtn.addEventListener('click', launchSub);
+            let partiBtn = document.getElementById("partiBtn");
+            partiBtn.addEventListener('click', checkParti);
+
+            let betBtn = document.getElementById("betBtn");
+            betBtn.addEventListener('click', bet);
+
+            let totalBet = document.getElementById("totalBet");
+            totalBet.innerText = await gambleInstance.methods.totalBet().call();
+            let requireBet = document.getElementById("requireBet");
+            requireBet.innerText = await gambleInstance.methods.requireBet().call();
+            let baseBet = document.getElementById("baseBet");
+            baseBet.innerText = await gambleInstance.methods.baseBet().call();
+            let increaseRate = document.getElementById("increaseRate");
+            increaseRate.innerText = await gambleInstance.methods.increaseRate().call();
+
+            resultBox = document.getElementById("resultbox");
+        }
+
+        /// 메인 룰렛 작동
+        async function launchMain() {
+            if (gambleInstance != null) {
+
+            }
+        }
+
+        /// 서브 룰렛 작동
+        async function launchSub() {
+            if (gambleInstance != null) {
+
+            }
+        }
+
+        /// 베팅
+        async function bet() {
+            if (gambleInstance != null) {
+                try {
+                    let valtxt = document.getElementById("betAmt");
+                    let val = valtxt.value;
+                    let value = await gambleInstance.methods.bet().send({ from: accounts[0], value: val });
+                    resultbox.innerHTML = value;
+
+                } catch (error) {
+                    resultBox.innerHTML = "Error Occured";
+                    console.log(error);
+                }
+            }
+        }
+
+        /// 참여자들 정보 확인
+        async function checkParti() {
+            if (gambleInstance != null) {
+                try {
+                    // 기존 참여자 정보 리스트 초기화
+                    partiList.length = 0;
+
+                    // 참여자 정보 리스트에 저장
+                    let cntParti = await gambleInstance.methods.numParticipants().call();
+                    for (let i = 0; i < cntParti; i++) {
+                        let p = await gambleInstance.methods.participants(i).call();
+                        partiList.push(p);
+                    }
+
+                    // 참여자 정보 리스트 모달로 출력
+                } catch (error) {
+                    resultBox.innerHTML = "Error Occured";
+                    console.log(error);
+                }
+            }
+        }
+
+        /// 룰렛 확률 정보 확인
+        async function checkPercentage() {
+            if (gambleInstance != null) {
+                // 룰렛 확률 정보 리스트 모달로 출력
+            }
+        }
+
+        /// 변수 값 표시
+        async function showValue() {
+            if (gambleInstance != null) {
+                try {
+                    let value = await gambleInstance.methods[this.id]().call();
+                    console.log(value);
+                    this.innerHTML = value;
+                } catch (error) {
+                    this.innerHTML = "Error Occured";
+                    console.log(error);
+                }
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <!-- Header -->
+    <header>
+        <h1>GAMBLING</h1>
+        <h3>Roulette Game <input type="button" id="accountBtn" value="JOIN"></h3>
+        <hr />
+    </header>
+
+    <!-- Contract Info -->
+    <div>◦Total : <span id="totalBet">12751</span> WEI</div>
+    <div>◦Requirement : <span id="requireBet">10600</span> (= <span id="baseBet">10000</span> / <span
+            id="increaseRate">6</span>%) WEI</div>
+    <br />
+
+    <!-- Main Roulette -->
+    <div>◦Main <input type="button" id="mainBtn" value="Launch" disabled></div>
+    <div><input type="button" id="percentageBtn" value="Percentage"></div>
+    <br />
+
+    <!-- Sub Roulette -->
+    <div>◦Sub <input type="button" id="subBtn" value="Launch" disabled></div>
+    <div><input type="button" id="partiBtn" value="Participants"></div>
+    <br />
+
+    <!-- Betting Section -->
+    <div>◦Current Account : <span id="showAccount">Empty</span></div>
+    <div>◦Betting : <input type="number" value="0" step="100" min="0" id="betAmt"> WEI <input type="submit" id="betBtn"
+            value="BET"></div>
+    <div>◦Result : <span id="resultbox">Empty</span></div>
+
+</body>
+
+</html>
