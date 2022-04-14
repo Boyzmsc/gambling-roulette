@@ -1,0 +1,119 @@
+body {
+    margin: 0;
+    padding: 0;
+    background: #2d3436;
+}
+
+hr {
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+div {
+    font-size: 22px;
+    color: rgb(220, 220, 220);
+}
+
+.btn {
+    font-size: 16px;
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    margin-top: 4px;
+    height: 25px;
+    color: rgb(220, 220, 220);
+    background: #2d3436;
+    padding: 2px 12px;
+    border: 1px solid rgb(220, 220, 220);
+    border-radius: 3px;
+    transition: all 0.4s;
+}
+
+.join {
+    height: 24px;
+    margin-top: 1px;
+}
+
+.submit {
+    margin-top: 5px;
+}
+
+.btn:hover {
+    cursor: pointer;
+    color: #2d3436;
+    background: rgb(220, 220, 220);
+}
+
+.btn:disabled {
+    color: #2d3436;
+    background: rgb(220, 220, 220);
+    border: 1px solid rgb(220, 220, 220);
+    border-radius: 3px;
+}
+
+.btn:disabled:hover {
+    cursor: not-allowed;
+}
+
+.middle {
+    position: absolute;
+    width: 55%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.mainTitle {
+    font: small-caps bold 60px/1 serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.subTitle {
+    font: small-caps bold 25px/1 serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 5px;
+}
+
+#betAmt {
+    margin-top: 5px;
+    font-size: 18px;
+    color: rgb(220, 220, 220);
+    background: #2d3436;
+    border: 1px solid rgb(220, 220, 220);
+    border-radius: 3px;
+    text-align: right;
+}
+
+.totalBetContainer,
+.requireBetContainer,
+.mainRBtnContainer,
+.subRBtnContainer,
+.accountContainer,
+.betContainer,
+.resultContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.mainRoulette,
+.subRoulette {
+    margin: 0px 10%;
+    height: 60px;
+    line-height: 60px;
+    border: 1px solid rgb(220, 220, 220);
+    border-radius: 3px;
+    margin-bottom: 5px;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.accountContainer {
+    direction: ltr;
+}
