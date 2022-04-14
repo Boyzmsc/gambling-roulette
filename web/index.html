@@ -3,6 +3,7 @@
 
 <head>
     <title>Gambling Roulette</title>
+    <link rel="stylesheet" href="main.css">
 
     <script src='web3.min.js'></script>
     <script type="text/javascript" src="abilist.js"></script>
@@ -11,14 +12,15 @@
         let gambleInstance = null;
         let resultBox = null;
 
+        let cntParti;
         let partiList = [];
         let percentageList = [
-            { name: "현재 참여자에게 베팅금 전액 송금", index: 0, percentage: 5, show: true },
-            { name: "특정 참여자에게 베팅금 전액 송금", index: 1, percentage: 5, show: false },
-            { name: "베팅금 증가 비율 1% 증가", index: 2, percentage: 5, show: true },
-            { name: "베팅금 증가 비율 2% 증가", index: 3, percentage: 5, show: true },
-            { name: "베팅금 증가 비율 5% 증가", index: 4, percentage: 5, show: true },
-            { name: "PASS", index: 5, percentage: 80, show: true },
+            { name: "현재 참여자에게 베팅금 전액 송금", value: "5%" },
+            { name: "특정 참여자에게 베팅금 전액 송금", value: "5%" },
+            { name: "베팅금 증가 비율 1% 증가", value: "5%" },
+            { name: "베팅금 증가 비율 2% 증가", value: "5%" },
+            { name: "베팅금 증가 비율 5% 증가", value: "5%" },
+            { name: "PASS", value: "75%" },
         ];
 
         window.addEventListener('load', gamble);
@@ -26,6 +28,8 @@
         /// Gamble Init
         async function gamble() {
             if (window.ethereum) {
+                resultBox = document.getElementById("resultbox");
+
                 let accountBtn = document.getElementById("accountBtn");
                 accountBtn.addEventListener('click', accountBtnClicked);
             } else if (window.web3) {
@@ -43,12 +47,12 @@
             // account 가져오기 (= Metamask 계정)
             accounts = await ethereum.request({ method: 'eth_requestAccounts' });
 
-            let accountBtn = document.getElementById("accountBtn");
-            accountBtn.disabled = true;
+            this.disabled = true;
 
             const showAccount = document.getElementById("showAccount");
             showAccount.innerHTML = accounts[0];
 
+            resultBox.innerHTML = "Account Connected"
             getGambleInstance();
         }
 
@@ -76,6 +80,8 @@
             let partiBtn = document.getElementById("partiBtn");
             partiBtn.addEventListener('click', checkParti);
 
+            let betAmt = document.getElementById("betAmt");
+            betAmt.value = await gambleInstance.methods.requireBet().call();
             let betBtn = document.getElementById("betBtn");
             betBtn.addEventListener('click', bet);
 
@@ -88,20 +94,80 @@
             let increaseRate = document.getElementById("increaseRate");
             increaseRate.innerText = await gambleInstance.methods.increaseRate().call();
 
-            resultBox = document.getElementById("resultbox");
+            // 기존 참여자 정보 리스트 초기화
+            partiList.length = 0;
+
+            // 참여자 정보 리스트에 저장
+            cntParti = await gambleInstance.methods.numParticipants().call();
+            for (let i = 0; i < cntParti; i++) {
+                let p = await gambleInstance.methods.participants(i).call();
+                console.log(p);
+                partiList.push(p);
+            }
         }
 
         /// 메인 룰렛 작동
         async function launchMain() {
             if (gambleInstance != null) {
+                // 난수 생성 (1 <= rNum <= 100)
+                let rNum = Math.floor(Math.random() * 100) + 1;
+                console.log(rNum);
 
+                // 메인 룰렛 돌리기
+
+                let goToSub = false;
+                if (rNum > 95) {
+                    // 현재 참여자에게 베팅금 전액 송금 당첨 시 (100~96 / 5%)
+                    let value = await gambleInstance.methods.sendBetToSomeone(accounts[0]).call();
+                    resultbox.innerHTML = value;
+                } else if (rNum > 90) {
+                    // 특정 참여자에게 베팅금 전액 송금 당첨 시 (95~91 / 5%)
+                    // 메인 룰렛 버튼 비활성화 및 서브 룰렛 버튼 활성화
+                    this.disabled = true;
+                    let subBtn = document.getElementById("subBtn");
+                    subBtn.disabled = false;
+                    goToSub = true;
+                } else if (rNum > 85) {
+                    // 베팅금 증가 비율 1% 증가 당첨 시 (90~86 / 5%)
+                    let value = await gambleInstance.methods.changeRate(1).call();
+                    resultbox.innerHTML = value;
+                } else if (rNum > 80) {
+                    // 베팅금 증가 비율 2% 증가 당첨 시 (85~81 / 5%)
+                    let value = await gambleInstance.methods.changeRate(2).call();
+                    resultbox.innerHTML = value;
+                } else if (rNum > 75) {
+                    // 베팅금 증가 비율 5% 증가 당첨 시 (80~76 / 5%)
+                    let value = await gambleInstance.methods.changeRate(5).call();
+                    resultbox.innerHTML = value;
+                } else {
+                    // PASS (75~1 / 75%)
+                    resultbox.innerHTML = "PASS";
+                }
+
+                if (!goToSub) {
+                    // 메인 룰렛 버튼 비활성화 및 베팅 버튼 활성화
+                    this.disabled = true;
+                    let betBtn = document.getElementById("betBtn");
+                    betBtn.disabled = false;
+                }
             }
         }
 
         /// 서브 룰렛 작동
         async function launchSub() {
             if (gambleInstance != null) {
+                // 난수 생성 (0 <= rNum < 참여자 수)
+                let rNum = Math.floor(Math.random() * cntParti);
 
+                // 서브 룰렛 돌리기
+
+                let value = await gambleInstance.methods.sendBetToSomeone(partiList[rNum].addr).call();
+                resultbox.innerHTML = value;
+
+                // 서브 룰렛 버튼 비활성화 및 베팅 버튼 활성화
+                this.disabled = true;
+                let betBtn = document.getElementById("betBtn");
+                betBtn.disabled = false;
             }
         }
 
@@ -114,6 +180,10 @@
                     let value = await gambleInstance.methods.bet().send({ from: accounts[0], value: val });
                     resultbox.innerHTML = value;
 
+                    // 베팅 버튼 비활성화 및 메인 룰렛 버튼 활성화
+                    this.disabled = true;
+                    let mainBtn = document.getElementById("mainBtn");
+                    mainBtn.disabled = false;
                 } catch (error) {
                     resultBox.innerHTML = "Error Occured";
                     console.log(error);
@@ -125,17 +195,8 @@
         async function checkParti() {
             if (gambleInstance != null) {
                 try {
-                    // 기존 참여자 정보 리스트 초기화
-                    partiList.length = 0;
-
-                    // 참여자 정보 리스트에 저장
-                    let cntParti = await gambleInstance.methods.numParticipants().call();
-                    for (let i = 0; i < cntParti; i++) {
-                        let p = await gambleInstance.methods.participants(i).call();
-                        partiList.push(p);
-                    }
-
                     // 참여자 정보 리스트 모달로 출력
+                    console.log(partiList);
                 } catch (error) {
                     resultBox.innerHTML = "Error Occured";
                     console.log(error);
@@ -147,6 +208,7 @@
         async function checkPercentage() {
             if (gambleInstance != null) {
                 // 룰렛 확률 정보 리스트 모달로 출력
+                console.log(percentageList);
             }
         }
 
@@ -167,35 +229,40 @@
 </head>
 
 <body>
-    <!-- Header -->
-    <header>
-        <h1>GAMBLING</h1>
-        <h3>Roulette Game <input type="button" id="accountBtn" value="JOIN"></h3>
+    <div class="middle">
+        <!-- Header -->
+        <div class="mainTitle">GAMBLING</div>
+        <div class="subTitle">Roulette Game&nbsp;<input class="btn join" type="button" id="accountBtn" value="JOIN">
+        </div>
         <hr />
-    </header>
 
-    <!-- Contract Info -->
-    <div>◦Total : <span id="totalBet">12751</span> WEI</div>
-    <div>◦Requirement : <span id="requireBet">10600</span> (= <span id="baseBet">10000</span> / <span
-            id="increaseRate">6</span>%) WEI</div>
-    <br />
+        <!-- Contract Info -->
+        <div class="totalBetContainer">◦Total :&nbsp;<span id="totalBet">0</span>&nbsp;wei</div>
+        <div class="requireBetContainer">◦Requirement :&nbsp;<span id="requireBet">0</span>&nbsp;(=&nbsp;<span
+                id="baseBet">0</span>&nbsp;/&nbsp;<span id="increaseRate">0</span>%)&nbsp;wei</div>
+        <br />
 
-    <!-- Main Roulette -->
-    <div>◦Main <input type="button" id="mainBtn" value="Launch" disabled></div>
-    <div><input type="button" id="percentageBtn" value="Percentage"></div>
-    <br />
+        <!-- Main Roulette -->
+        <div class="mainRoulette">Main Roulette</div>
+        <div class="mainRBtnContainer"><input class="btn" type="button" id="mainBtn" value="LAUNCH"
+                disabled>&nbsp;<input class="btn" type="button" id="percentageBtn" value="PERCENTAGE"></div>
+        <br />
 
-    <!-- Sub Roulette -->
-    <div>◦Sub <input type="button" id="subBtn" value="Launch" disabled></div>
-    <div><input type="button" id="partiBtn" value="Participants"></div>
-    <br />
+        <!-- Sub Roulette -->
+        <div class="subRoulette">Sub Roulette</div>
+        <div class="subRBtnContainer"><input class="btn" type="button" id="subBtn" value="LAUNCH" disabled>&nbsp;<input
+                class="btn" type="button" id="partiBtn" value="PARTICIPANTS"></div>
+        <br />
 
-    <!-- Betting Section -->
-    <div>◦Current Account : <span id="showAccount">Empty</span></div>
-    <div>◦Betting : <input type="number" value="0" step="100" min="0" id="betAmt"> WEI <input type="submit" id="betBtn"
-            value="BET"></div>
-    <div>◦Result : <span id="resultbox">Empty</span></div>
+        <!-- Betting Section -->
+        <div class="accountContainer">◦Account :&nbsp;<span id="showAccount">Empty</span></div>
+        <div class="betContainer">◦Betting :&nbsp;<input type="number" value="0" step="100" min="0"
+                id="betAmt">&nbsp;wei&nbsp;<input class="btn submit" type="submit" id="betBtn" value="BET"></div>
+        <hr />
 
+        <!-- Footer -->
+        <div class="resultContainer">◦Result :&nbsp;<span id="resultbox">Empty</span></div>
+    </div>
 </body>
 
 </html>
