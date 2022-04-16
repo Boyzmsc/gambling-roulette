@@ -7,21 +7,11 @@
 
     <script src='web3.min.js'></script>
     <script type="text/javascript" src="abilist.js"></script>
-    <script type="text/javascript">
+    <script defer type="text/javascript">
         let accounts = null;
         let gambleInstance = null;
         let resultBox = null;
-
-        let cntParti;
-        let partiList = [];
-        let percentageList = [
-            { name: "현재 참여자에게 베팅금 전액 송금", value: "5%" },
-            { name: "특정 참여자에게 베팅금 전액 송금", value: "5%" },
-            { name: "베팅금 증가 비율 1% 증가", value: "5%" },
-            { name: "베팅금 증가 비율 2% 증가", value: "5%" },
-            { name: "베팅금 증가 비율 5% 증가", value: "5%" },
-            { name: "PASS", value: "75%" },
-        ];
+        let rouletteList = null;
 
         window.addEventListener('load', gamble);
 
@@ -66,9 +56,36 @@
 
             // Gamble의 Contract 생성
             gambleInstance = await new window.web3.eth.Contract(gambleAbi, address);
+            crawlingData();
             registerEventHandlers();
         }
 
+        /// Contract 데이터 가져오기
+        async function crawlingData() {
+            let totalBet = document.getElementById("totalBet");
+            totalBet.innerText = await gambleInstance.methods.totalBet().call();
+            let requireBet = document.getElementById("requireBet");
+            requireBet.innerText = await gambleInstance.methods.requireBet().call();
+
+            let baseBet = document.getElementById("baseBet");
+            baseBet.innerText = await gambleInstance.methods.baseBet().call();
+            let increaseRate = document.getElementById("increaseRate");
+            increaseRate.innerText = await gambleInstance.methods.increaseRate().call();
+
+            let betAmt = document.getElementById("betAmt");
+            betAmt.value = 0;
+
+            rouletteList = [
+                "현재 참여자에게 베팅금 전액 송금",
+                "특정 참여자에게 베팅금 전액 송금",
+                "베팅금 증가 비율 1% 증가",
+                "베팅금 증가 비율 2% 증가",
+                "베팅금 증가 비율 5% 증가",
+                "PASS"
+            ];
+        }
+
+        /// Dom 객체와 동작 함수 연결
         async function registerEventHandlers() {
             let mainBtn = document.getElementById("mainBtn");
             mainBtn.addEventListener('click', launchMain);
@@ -80,30 +97,8 @@
             let partiBtn = document.getElementById("partiBtn");
             partiBtn.addEventListener('click', checkParti);
 
-            let betAmt = document.getElementById("betAmt");
-            betAmt.value = await gambleInstance.methods.requireBet().call();
             let betBtn = document.getElementById("betBtn");
             betBtn.addEventListener('click', bet);
-
-            let totalBet = document.getElementById("totalBet");
-            totalBet.innerText = await gambleInstance.methods.totalBet().call();
-            let requireBet = document.getElementById("requireBet");
-            requireBet.innerText = await gambleInstance.methods.requireBet().call();
-            let baseBet = document.getElementById("baseBet");
-            baseBet.innerText = await gambleInstance.methods.baseBet().call();
-            let increaseRate = document.getElementById("increaseRate");
-            increaseRate.innerText = await gambleInstance.methods.increaseRate().call();
-
-            // 기존 참여자 정보 리스트 초기화
-            partiList.length = 0;
-
-            // 참여자 정보 리스트에 저장
-            cntParti = await gambleInstance.methods.numParticipants().call();
-            for (let i = 0; i < cntParti; i++) {
-                let p = await gambleInstance.methods.participants(i).call();
-                console.log(p);
-                partiList.push(p);
-            }
         }
 
         /// 메인 룰렛 작동
@@ -114,6 +109,7 @@
                 console.log(rNum);
 
                 // 메인 룰렛 돌리기
+                //
 
                 let goToSub = false;
                 if (rNum > 95) {
@@ -149,6 +145,9 @@
                     this.disabled = true;
                     let betBtn = document.getElementById("betBtn");
                     betBtn.disabled = false;
+
+                    // 갱신된 정보 가져오기
+                    crawlingData();
                 }
             }
         }
@@ -156,10 +155,20 @@
         /// 서브 룰렛 작동
         async function launchSub() {
             if (gambleInstance != null) {
+                // 참여자 정보 리스트에 저장
+                // let cntParti = await gambleInstance.methods.numParticipants().call();
+                // let partiList = [];
+                // for (let i = 0; i < cntParti; i++) {
+                //     let p = await gambleInstance.methods.participants(i).call();
+                //     console.log(p);
+                //     partiList.push(p);
+                // }
+
                 // 난수 생성 (0 <= rNum < 참여자 수)
                 let rNum = Math.floor(Math.random() * cntParti);
 
                 // 서브 룰렛 돌리기
+                //
 
                 let value = await gambleInstance.methods.sendBetToSomeone(partiList[rNum].addr).call();
                 resultbox.innerHTML = value;
@@ -168,6 +177,9 @@
                 this.disabled = true;
                 let betBtn = document.getElementById("betBtn");
                 betBtn.disabled = false;
+
+                // 갱신된 정보 가져오기
+                crawlingData();
             }
         }
 
@@ -175,15 +187,46 @@
         async function bet() {
             if (gambleInstance != null) {
                 try {
-                    let valtxt = document.getElementById("betAmt");
-                    let val = valtxt.value;
-                    let value = await gambleInstance.methods.bet().send({ from: accounts[0], value: val });
-                    resultbox.innerHTML = value;
+                    let requireBet = await gambleInstance.methods.requireBet().call();
+                    let val = document.getElementById("betAmt").value;
 
-                    // 베팅 버튼 비활성화 및 메인 룰렛 버튼 활성화
-                    this.disabled = true;
-                    let mainBtn = document.getElementById("mainBtn");
-                    mainBtn.disabled = false;
+                    if (val >= requireBet) {
+                        // 입력한 금액이 최소 필요 금액 이상일 경우
+                        let body = document.querySelector('body');
+                        let check = document.querySelector('.check');
+                        let yesBtn = document.getElementById('yesBtn');
+                        let cancelBtn = document.getElementById('cancelBtn');
+
+                        check.style.display = "block";
+                        body.style.overflow = 'hidden';
+                        resultbox.innerHTML = "Betting Continuing...";
+
+                        // 취소 버튼 클릭 시
+                        cancelBtn.addEventListener('click', () => {
+                            check.style.display = "none";
+                            body.style.overflow = 'auto';
+                            resultbox.innerHTML = "Betting Canceled";
+                        });
+
+                        // 승인 버튼 클릭 시
+                        yesBtn.addEventListener('click', async () => {
+                            check.style.display = "none";
+                            body.style.overflow = 'auto';
+
+                            console.log("send");
+
+                            // 입력한 금액 베팅
+                            let value = await gambleInstance.methods.bet().send({ from: accounts[0], value: val });
+                            resultbox.innerHTML = value;
+
+                            // 베팅 버튼 비활성화 및 메인 룰렛 버튼 활성화
+                            this.disabled = true;
+                            let mainBtn = document.getElementById("mainBtn");
+                            mainBtn.disabled = false;
+                        });
+                    } else {
+                        resultbox.innerHTML = "Enter more than Requirement";
+                    }
                 } catch (error) {
                     resultBox.innerHTML = "Error Occured";
                     console.log(error);
@@ -194,21 +237,64 @@
         /// 참여자들 정보 확인
         async function checkParti() {
             if (gambleInstance != null) {
-                try {
-                    // 참여자 정보 리스트 모달로 출력
-                    console.log(partiList);
-                } catch (error) {
-                    resultBox.innerHTML = "Error Occured";
-                    console.log(error);
+                // 참여자 정보 리스트 모달로 출력
+                document.querySelector(".modalTitle").innerHTML = "Participants";
+
+                // 참여자 정보 리스트에 저장
+                // let cntParti = await gambleInstance.methods.numParticipants().call();
+                // let partiList = [];
+                // for (let i = 0; i < cntParti; i++) {
+                //     let p = await gambleInstance.methods.participants(i).call();
+                //     console.log(p);
+                //     partiList.push(p);
+                // }
+
+                // Temp
+                let cntTmp = 3;
+                let tmpList = [
+                    { addr: "0xc237ba510b441da4847155481146b86d17cae8ca", amount: 1000 },
+                    { addr: "0xa8s4d5c6v8d1vx2cv47155481146b86d17cae8ca", amount: 2000 },
+                    { addr: "0xt8sd5f6x8c41v28h647155481146b86d17cae8ca", amount: 5500 },
+                ];
+
+                let txt = "";
+                for (let i = 0; i < cntTmp; i++) {
+                    txt += "<tr><td class='tg-sej6'>" + tmpList[i].addr.substr(0, 27) + "...</td><td class='tg-sej6'>" + tmpList[i].amount + "</td></tr>";
                 }
+                document.querySelector(".modalBody").innerHTML = "<table class='tg'><thead><tr><th id='tg1' class='tg-9gjn'>참여자</th><th id='tg2' class='tg-9gjn'>베팅금</th></tr ></thead ><tbody>" + txt + "</tbody></table >";
+
+                let body = document.querySelector('body');
+                let modal = document.querySelector('.modal');
+                let closeBtn = document.getElementById('closeBtn');
+
+                modal.style.display = "block";
+                body.style.overflow = 'hidden';
+
+                closeBtn.addEventListener('click', () => {
+                    modal.style.display = "none";
+                    body.style.overflow = 'auto';
+                });
             }
         }
 
         /// 룰렛 확률 정보 확인
         async function checkPercentage() {
             if (gambleInstance != null) {
+                document.querySelector(".modalTitle").innerHTML = "Roulette's Percentage";
+                document.querySelector(".modalBody").innerHTML = "<table class='tg'><thead><tr><th id='tg1' class='tg-9gjn'>내용</th><th id='tg2' class='tg-9gjn'>확률</th></tr ></thead ><tbody><tr><td class='tg-sej6'>현재 참여자에게 베팅금 전액 송금</td><td class='tg-sej6'>5%</td></tr><tr><td class='tg-sej6'>특정 참여자에게 베팅금 전액 송금</td><td class='tg-sej6'>5%</td></tr><tr><td class='tg-sej6'>베팅금 증가 비율 1% 증가</td><td class='tg-sej6'>5%</td></tr><tr><td class='tg-sej6'>베팅금 증가 비율 2% 증가</td><td class='tg-sej6'>5%</td></tr><tr><td class='tg-sej6'>베팅금 증가 비율 5% 증가</td><td class='tg-sej6'>5%</td></tr><tr><td class='tg-sej6'>PASS</td><td class='tg-sej6'>75%</td></tr></tbody></table >";
+
                 // 룰렛 확률 정보 리스트 모달로 출력
-                console.log(percentageList);
+                let body = document.querySelector('body');
+                let modal = document.querySelector('.modal');
+                let closeBtn = document.getElementById('closeBtn');
+
+                modal.style.display = "block";
+                body.style.overflow = 'hidden';
+
+                closeBtn.addEventListener('click', () => {
+                    modal.style.display = "none";
+                    body.style.overflow = 'auto';
+                });
             }
         }
 
@@ -243,13 +329,13 @@
         <br />
 
         <!-- Main Roulette -->
-        <div class="mainRoulette">Main Roulette</div>
+        <div id="mainRoulette" class="mainRoulette">Main Roulette</div>
         <div class="mainRBtnContainer"><input class="btn" type="button" id="mainBtn" value="LAUNCH"
                 disabled>&nbsp;<input class="btn" type="button" id="percentageBtn" value="PERCENTAGE"></div>
         <br />
 
         <!-- Sub Roulette -->
-        <div class="subRoulette">Sub Roulette</div>
+        <div id="subRoulette" class="subRoulette">Sub Roulette</div>
         <div class="subRBtnContainer"><input class="btn" type="button" id="subBtn" value="LAUNCH" disabled>&nbsp;<input
                 class="btn" type="button" id="partiBtn" value="PARTICIPANTS"></div>
         <br />
@@ -259,6 +345,29 @@
         <div class="betContainer">◦Betting :&nbsp;<input type="number" value="0" step="100" min="0"
                 id="betAmt">&nbsp;wei&nbsp;<input class="btn submit" type="submit" id="betBtn" value="BET"></div>
         <hr />
+
+        <!-- Modal -->
+        <div class="modal">
+            <div class="modalContainer">
+                <div class="modalTitle"></div>
+                <div class="modalBody"></div>
+                <div class="modalBtn">
+                    <input class="btn" type="button" id="closeBtn" value="CLOSE">
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal -->
+        <div class="check">
+            <div class="checkContainer">
+                <div class="checkTitle">Check</div>
+                <div class="checkBody">Are You Sure?</div>
+                <div class="checkBtn">
+                    <input class="btn" type="button" id="yesBtn" value="SURE">
+                    <input class="btn" type="button" id="cancelBtn" value="CANCLE">
+                </div>
+            </div>
+        </div>
 
         <!-- Footer -->
         <div class="resultContainer">◦Result :&nbsp;<span id="resultbox">Empty</span></div>
