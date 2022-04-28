@@ -55,7 +55,7 @@
         async function getGambleInstance() {
             // Deploy를 수행한 address (= Metamask 계정 아님)
             // Gamble의 address
-            let address = "0x406e491B5D24ea5064F9Fe2151Cc121a1DBb9607";
+            let address = "0x2863e4fa621A1853e75e840c0cF980D73FAF8E25";
 
             window.web3 = new Web3(window.ethereum);
 
@@ -68,14 +68,12 @@
         async function initData() {
             let totalBet = document.getElementById("totalBet");
             totalBet.innerText = await gambleInstance.methods.totalBet().call();
-            let requireBet = document.getElementById("requireBet");
-            requireBet.innerText = await gambleInstance.methods.requireBet().call();
-
             let baseBet = document.getElementById("baseBet");
             baseBet.innerText = await gambleInstance.methods.baseBet().call();
             let increaseRate = document.getElementById("increaseRate");
             increaseRate.innerText = await gambleInstance.methods.increaseRate().call();
-
+            let requireBet = document.getElementById("requireBet");
+            requireBet.innerText = await gambleInstance.methods.requireBet().call();
             let betAmt = document.getElementById("betAmt");
             betAmt.value = 0;
 
@@ -124,7 +122,6 @@
 
             let yesBtn = document.getElementById('yesBtn');
             yesBtn.addEventListener('click', yesBtnClicked);
-
             let cancelBtn = document.getElementById('cancelBtn');
             cancelBtn.addEventListener('click', cancelBtnClicked);
         }
@@ -147,14 +144,15 @@
             if (gambleInstance != null) {
                 // 메인 룰렛 버튼 비활성화
                 this.disabled = true;
+                statusBox.innerHTML = "Main Roulette Launching...";
 
                 let mainR = document.getElementById("mainSlot");
 
                 // 난수 생성 (1 <= rNum <= 100)
-                let rNum = Math.floor(Math.random() * 100) + 1;
+                let rNum = await Math.floor(Math.random() * 100) + 1;
                 console.log(rNum);
 
-                let idx;
+                let idx = null;
                 if (rNum > 95) {
                     // 현재 참여자에게 베팅금 전액 송금 당첨 시 (100~96 / 5%)
                     idx = 0;
@@ -193,50 +191,58 @@
                     mainR.innerHTML = rouletteList[idx];
                     mainR.classList.replace("start", "end");
 
-                    if (rNum > 95) {
-                        let addr = web3.utils.toChecksumAddress(accounts[0]);
-                        console.log(addr);
-                        let value = await gambleInstance.methods.sendBetToSomeone(addr).send({ from: accounts[0] });
-                        resultBox.innerHTML = value;
-                        statusBox.innerHTML = "현재 참여자에게 베팅금 전액 송금 당첨";
-                    } else if (rNum > 90) {
-                        goToSub = true;
+                    try {
+                        if (rNum > 95) {
+                            statusBox.innerHTML = "현재 참여자에게 베팅금 전액 송금 당첨";
+                            let value = await gambleInstance.methods.sendBetToSomeone(accounts[0]).send({ from: accounts[0] });
+                            resultBox.innerHTML = value.blockHash + " (blockHash)";
+                            statusBox.innerHTML = "현재 참여자에게 베팅금 전액 송금 완료";
+                        } else if (rNum > 90) {
+                            goToSub = true;
+                            let subR = document.getElementById("subSlot");
+                            subR.innerHTML = "Launch Continuing...";
+                            statusBox.innerHTML = "특정 참여자에게 베팅금 전액 송금 당첨";
+                            // 서브 룰렛 버튼 활성화
+                            let subBtn = document.getElementById("subBtn");
+                            subBtn.disabled = false;
+                        } else if (rNum > 85) {
+                            statusBox.innerHTML = "베팅금 증가 비율 1% 증가 당첨";
+                            let value = await gambleInstance.methods.changeRate(1).send({ from: accounts[0] });
+                            resultBox.innerHTML = value.blockHash + " (blockHash)";
+                            statusBox.innerHTML = "베팅금 증가 비율 1% 증가 완료";
+                        } else if (rNum > 80) {
+                            statusBox.innerHTML = "베팅금 증가 비율 2% 증가 당첨";
+                            let value = await gambleInstance.methods.changeRate(2).send({ from: accounts[0] });
+                            resultBox.innerHTML = value.blockHash + " (blockHash)";
+                            statusBox.innerHTML = "베팅금 증가 비율 2% 증가 완료";
+                        } else if (rNum > 75) {
+                            statusBox.innerHTML = "베팅금 증가 비율 5% 증가 당첨";
+                            let value = await gambleInstance.methods.changeRate(5).send({ from: accounts[0] });
+                            resultBox.innerHTML = value.blockHash + " (blockHash)";
+                            statusBox.innerHTML = "베팅금 증가 비율 5% 증가 완료";
+                        } else {
+                            statusBox.innerHTML = "PASS";
+                        }
 
-                        // 서브 룰렛 버튼 활성화
-                        let subBtn = document.getElementById("subBtn");
-                        subBtn.disabled = false;
-                        let subR = document.getElementById("subSlot");
-                        subR.innerHTML = "Launch Continuing...";
-                        statusBox.innerHTML = "특정 참여자에게 베팅금 전액 송금 당첨";
-                    } else if (rNum > 85) {
-                        let value = await gambleInstance.methods.changeRate(1).send({ from: accounts[0] });
-                        resultBox.innerHTML = value;
-                        statusBox.innerHTML = "베팅금 증가 비율 1% 증가 당첨";
-                    } else if (rNum > 80) {
-                        let value = await gambleInstance.methods.changeRate(2).send({ from: accounts[0] });
-                        resultBox.innerHTML = value;
-                        statusBox.innerHTML = "베팅금 증가 비율 2% 증가 당첨";
-                    } else if (rNum > 75) {
-                        let value = await gambleInstance.methods.changeRate(5).send({ from: accounts[0] });
-                        resultBox.innerHTML = value;
-                        statusBox.innerHTML = "베팅금 증가 비율 5% 증가 당첨";
-                    } else {
-                        statusBox.innerHTML = "PASS 당첨";
+                        if (!goToSub) {
+                            // 갱신된 정보 가져오기 및 초기 상태로 이동
+                            initData();
+                        }
+                    } catch (error) {
+                        // MetaMask 거래 거부 버튼 클릭 시 처리 (블랙리스트 등록)
+                        // MetaMask 거래 거부 에러 코드 = 4001
+                        // Todo
+                        console.log("블랙리스트 등록");
+
+                        // 갱신된 정보 가져오기 및 초기 상태로 이동
+                        statusBox.innerHTML = "MetaMask 거래 거부 (블랙리스트 등록)"
+                        initData();
                     }
                 }, 4000);
 
                 await setTimeout(async () => {
                     mainR.classList.remove("end");
-
-                    if (!goToSub) {
-                        // 갱신된 정보 가져오기
-                        await initData();
-
-                        // 베팅 버튼 활성화
-                        let betBtn = document.getElementById("betBtn");
-                        betBtn.disabled = false;
-                    }
-                }, 6000);
+                }, 5000);
             }
         }
 
@@ -245,6 +251,8 @@
             if (gambleInstance != null) {
                 // 서브 버튼 비활성화
                 this.disabled = true;
+                statusBox.innerHTML = "Sub Roulette Launching...";
+
                 let subR = document.getElementById("subSlot");
 
                 // 난수 생성 (0 <= rNum < 참여자 수)
@@ -266,48 +274,50 @@
                     clearInterval(timer);
                     subR.innerHTML = partiList[rNum].addr;
                     subR.classList.replace("start", "end");
-                    statusBox.innerHTML = partiList[rNum].addr;
 
-                    let addr = web3.utils.toChecksumAddress(partiList[rNum].addr);
-                    console.log(addr);
-                    let value = await gambleInstance.methods.sendBetToSomeone(addr).send({ from: accounts[0] });
-                    resultBox.innerHTML = value;
+                    try {
+                        statusBox.innerHTML = partiList[rNum].addr.toLowerCase() + " 당첨";
+                        let value = await gambleInstance.methods.sendBetToSomeone(partiList[rNum].addr).send({ from: accounts[0] });
+                        resultBox.innerHTML = value.blockHash + " (blockHash)";
+                        statusBox.innerHTML = "특정 참여자에게 베팅금 전액 송금 완료";
+
+                        // 갱신된 정보 가져오기 및 초기 상태로 이동
+                        initData();
+                    } catch (error) {
+                        // MetaMask 거래 거부 버튼 클릭 시 처리 (블랙리스트 등록)
+                        // MetaMask 거래 거부 에러 코드 = 4001
+                        // Todo
+                        console.log("블랙리스트 등록");
+
+                        // 갱신된 정보 가져오기 및 초기 상태로 이동
+                        statusBox.innerHTML = "MetaMask 거래 거부 (블랙리스트 등록)"
+                        initData();
+                    }
                 }, 4000);
 
                 await setTimeout(async () => {
                     subR.classList.remove("end");
-
-                    // 갱신된 정보 가져오기
-                    await initData();
-
-                    // 베팅 버튼 활성화
-                    let betBtn = document.getElementById("betBtn");
-                    betBtn.disabled = false;
-                }, 6000);
+                }, 5000);
             }
         }
 
         /// 베팅
         async function bet() {
             if (gambleInstance != null) {
-                try {
-                    let val = document.getElementById("betAmt").value;
+                let val = document.getElementById("betAmt").value;
 
-                    if (val >= parseInt(requireBetAmt)) {
-                        // 입력한 금액이 최소 필요 금액 이상일 경우
-                        let body = document.querySelector('body');
-                        let check = document.querySelector('.check');
+                if (val >= parseInt(requireBetAmt)) {
+                    // 입력한 금액이 최소 필요 금액 이상일 경우
+                    let body = document.querySelector('body');
+                    let check = document.querySelector('.check');
 
-                        check.style.display = "block";
-                        body.style.overflow = 'hidden';
-                        statusBox.innerHTML = "Betting Continuing...";
-                    } else {
-                        statusBox.innerHTML = "Enter more than Requirement";
-                    }
-                } catch (error) {
-                    statusBox.innerHTML = "Error Occured";
-                    console.log(error);
+                    check.style.display = "block";
+                    body.style.overflow = 'hidden';
+                    statusBox.innerHTML = "Betting Continuing...";
+                } else {
+                    statusBox.innerHTML = "Enter more than Requirement";
                 }
+
             }
         }
 
@@ -324,20 +334,26 @@
                 let betBtn = document.getElementById("betBtn");
                 betBtn.disabled = true;
 
-                // 입력한 금액 베팅
-                let val = document.getElementById("betAmt").value;
-                let value = await gambleInstance.methods.bet().send({ from: accounts[0], value: val });
-                // resultBox.innerHTML = value;
-                statusBox.innerHTML = "Betting Completed";
+                try {
+                    // 입력한 금액 베팅
+                    let val = document.getElementById("betAmt").value;
+                    let value = await gambleInstance.methods.bet().send({ from: accounts[0], value: val });
+                    resultBox.innerHTML = value.blockHash + " (blockHash)";
+                    statusBox.innerHTML = "Betting Completed";
 
-                // 갱신된 정보 가져오기
-                await crawlingData();
+                    // 갱신된 정보 가져오기
+                    await crawlingData();
 
-                // 메인 룰렛 버튼 활성화
-                let mainBtn = document.getElementById("mainBtn");
-                mainBtn.disabled = false;
-                let mainR = document.getElementById("mainSlot");
-                mainR.innerHTML = "Launch Continuing...";
+                    // 메인 룰렛 버튼 활성화
+                    let mainBtn = document.getElementById("mainBtn");
+                    mainBtn.disabled = false;
+                    let mainR = document.getElementById("mainSlot");
+                    mainR.innerHTML = "Launch Continuing...";
+                } catch (error) {
+                    // MetaMask 거래 거부 버튼 클릭 시 처리 (초기화)
+                    statusBox.innerHTML = "Empty";
+                    initData();
+                }
             }
         }
 
@@ -398,20 +414,6 @@
                     modal.style.display = "none";
                     body.style.overflow = 'auto';
                 });
-            }
-        }
-
-        /// 변수 값 표시
-        async function showValue() {
-            if (gambleInstance != null) {
-                try {
-                    let value = await gambleInstance.methods[this.id]().call();
-                    console.log(value);
-                    this.innerHTML = value;
-                } catch (error) {
-                    this.innerHTML = "Error Occured";
-                    console.log(error);
-                }
             }
         }
     </script>
