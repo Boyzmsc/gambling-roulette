@@ -129,6 +129,11 @@ div {
     text-overflow: ellipsis;
 }
 
+.subSlot,
+.accountContainer {
+    text-transform: lowercase;
+}
+
 .accountContainer {
     direction: ltr;
 }
