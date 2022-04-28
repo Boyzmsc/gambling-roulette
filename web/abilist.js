@@ -1,9 +1,59 @@
 var gambleAbi = [
   {
     inputs: [],
+    stateMutability: "nonpayable",
+    type: "constructor",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "addr",
+        type: "address",
+      },
+    ],
+    name: "addToBlackList",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "baseBet",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "bet",
     outputs: [],
     stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    name: "blackList",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -20,13 +70,6 @@ var gambleAbi = [
     type: "function",
   },
   {
-    inputs: [],
-    name: "kill",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
     inputs: [
       {
         internalType: "address",
@@ -34,24 +77,12 @@ var gambleAbi = [
         type: "address",
       },
     ],
-    name: "sendBetToSomeone",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    stateMutability: "nonpayable",
-    type: "constructor",
-  },
-  {
-    inputs: [],
-    name: "baseBet",
+    name: "checkBlack",
     outputs: [
       {
-        internalType: "uint256",
+        internalType: "bool",
         name: "",
-        type: "uint256",
+        type: "bool",
       },
     ],
     stateMutability: "view",
@@ -73,6 +104,39 @@ var gambleAbi = [
   {
     inputs: [],
     name: "increaseRate",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "kill",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "addr",
+        type: "address",
+      },
+    ],
+    name: "makeWhite",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "numBlackParti",
     outputs: [
       {
         internalType: "uint256",
@@ -144,6 +208,19 @@ var gambleAbi = [
       },
     ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "addr",
+        type: "address",
+      },
+    ],
+    name: "sendBetToSomeone",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
