@@ -18,6 +18,7 @@ contract GamblingRoulette {
 
     mapping (uint => Participant) public participants;  // 참여자 관리를 위한 매핑
 	
+    /// 스마트 컨트랙트 소유자 접근 권한
 	modifier onlyOwner () {
 		require(msg.sender == owner);
 		_;
@@ -34,7 +35,7 @@ contract GamblingRoulette {
         requireBet = 10000;
 	}
 	
-	/// 베팅 시에 호출되는 함수
+	/// 베팅 시 호출되는 함수
 	function bet() payable public {
         // 베팅금이 최소 필요 베팅금 이상일 때 진행
         require(requireBet <= msg.value);
@@ -62,7 +63,7 @@ contract GamblingRoulette {
 		totalBet += msg.value;
 	}
 
-    /// 베팅금 증가 비율 증가 (룰렛) 당첨 시
+    /// 베팅금 비율 증가
     function changeRate(uint rate) public {
         // 베팅금 증가 비율 업데이트
         increaseRate += rate;
@@ -74,7 +75,7 @@ contract GamblingRoulette {
 	
     /// 특정 참여자에게 베팅금 전액 송금
     function sendBetToSomeone(address addr) public {
-        // 특정 참여자가 배열에 있는지 확인 & 인덱스 확인
+        // 특정 참여자가 배열에 있는지 확인
         uint idx;
         bool exist = false;
         for (uint i = 0; i < numParticipants; i++) {
