@@ -129,8 +129,7 @@ div {
     text-overflow: ellipsis;
 }
 
-.subSlot,
-.accountContainer {
+.showAccount {
     text-transform: lowercase;
 }
 
