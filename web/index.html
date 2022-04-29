@@ -55,7 +55,7 @@
         async function getGambleInstance() {
             // Deploy를 수행한 address (= Metamask 계정 아님)
             // Gamble의 address
-            let address = "0x2863e4fa621A1853e75e840c0cF980D73FAF8E25";
+            let address = "0x5055167130b17e24681FEB3BAE2349c8e1c32100";
 
             window.web3 = new Web3(window.ethereum);
 
@@ -229,13 +229,15 @@
                             initData();
                         }
                     } catch (error) {
-                        // MetaMask 거래 거부 버튼 클릭 시 처리 (블랙리스트 등록)
-                        // MetaMask 거래 거부 에러 코드 = 4001
-                        // Todo
-                        console.log("블랙리스트 등록");
+                        if (error.code == 4001) {
+                            // MetaMask 거래 거부 버튼 클릭 시 처리
+                            // MetaMask 거래 거부 에러 코드 = 4001
+                            statusBox.innerHTML = "MetaMask 거래 거부"
+                        } else {
+                            statusBox.innerHTML = "에러 발생, 초기 상태로 이동"
+                        }
 
                         // 갱신된 정보 가져오기 및 초기 상태로 이동
-                        statusBox.innerHTML = "MetaMask 거래 거부 (블랙리스트 등록)"
                         initData();
                     }
                 }, 4000);
@@ -272,25 +274,29 @@
 
                 await setTimeout(async () => {
                     clearInterval(timer);
-                    subR.innerHTML = partiList[rNum].addr;
+                    // 다른 참여자가 당첨된 사실을 현재 참여자가 알아차리면 MetaMask 거래를 거부할 수 있으므로
+                    // 참여자로 하여금 어떤 참여자가 당첨되었는지 모르게 하는 용도
+                    subR.innerHTML = "0x????????????????????????????????????????";
                     subR.classList.replace("start", "end");
 
                     try {
-                        statusBox.innerHTML = partiList[rNum].addr.toLowerCase() + " 당첨";
+                        statusBox.innerHTML = "특정 참여자 선택 완료";
                         let value = await gambleInstance.methods.sendBetToSomeone(partiList[rNum].addr).send({ from: accounts[0] });
                         resultBox.innerHTML = value.blockHash + " (blockHash)";
-                        statusBox.innerHTML = "특정 참여자에게 베팅금 전액 송금 완료";
+                        statusBox.innerHTML = partiList[rNum].addr.toLowerCase() + "에게 베팅금 전액 송금 완료";
 
                         // 갱신된 정보 가져오기 및 초기 상태로 이동
                         initData();
                     } catch (error) {
-                        // MetaMask 거래 거부 버튼 클릭 시 처리 (블랙리스트 등록)
-                        // MetaMask 거래 거부 에러 코드 = 4001
-                        // Todo
-                        console.log("블랙리스트 등록");
+                        if (error.code == 4001) {
+                            // MetaMask 거래 거부 버튼 클릭 시 처리
+                            // MetaMask 거래 거부 에러 코드 = 4001
+                            statusBox.innerHTML = "MetaMask 거래 거부"
+                        } else {
+                            statusBox.innerHTML = "에러 발생, 초기 상태로 이동"
+                        }
 
                         // 갱신된 정보 가져오기 및 초기 상태로 이동
-                        statusBox.innerHTML = "MetaMask 거래 거부 (블랙리스트 등록)"
                         initData();
                     }
                 }, 4000);
@@ -304,7 +310,7 @@
         /// 베팅
         async function bet() {
             if (gambleInstance != null) {
-                let val = document.getElementById("betAmt").value;
+                let val = await document.getElementById("betAmt").value;
 
                 if (val >= parseInt(requireBetAmt)) {
                     // 입력한 금액이 최소 필요 금액 이상일 경우
