@@ -3,10 +3,11 @@
 
 <head>
     <title>Gambling Roulette</title>
-    <link rel="stylesheet" href="main.css">
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="./main.css">
 
-    <script src='web3.min.js'></script>
-    <script type="text/javascript" src="abilist.js"></script>
+    <script src='./web3.min.js'></script>
+    <script type="text/javascript" src="./abilist.js"></script>
     <script defer type="text/javascript">
         let accounts = null;
         let gambleInstance = null;
@@ -267,7 +268,7 @@
                 subR.classList.add("start");
                 let timer = setInterval(() => {
                     var k = i % cntParti;
-                    subR.innerHTML = partiList[k].addr;
+                    subR.innerHTML = partiList[k].addr.toLowerCase();
                     subR.offsetWidth;
                     i++
                 }, 200);
@@ -356,8 +357,15 @@
                     let mainR = document.getElementById("mainSlot");
                     mainR.innerHTML = "Launch Continuing...";
                 } catch (error) {
-                    // MetaMask 거래 거부 버튼 클릭 시 처리 (초기화)
-                    statusBox.innerHTML = "Empty";
+                    if (error.code == 4001) {
+                        // MetaMask 거래 거부 버튼 클릭 시 처리
+                        // MetaMask 거래 거부 에러 코드 = 4001
+                        statusBox.innerHTML = "MetaMask 거래 거부"
+                    } else {
+                        statusBox.innerHTML = "에러 발생, 초기 상태로 이동"
+                    }
+
+                    // 갱신된 정보 가져오기 및 초기 상태로 이동
                     initData();
                 }
             }
